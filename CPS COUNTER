@@ -1,67 +1,58 @@
 -- Define a function to calculate CPS
-local function calculateCPS()
+local function calculateCPS(cpsDisplay)
     local clicks = 0
     local lastTick = tick()
-    
+
     -- Function to increment clicks and calculate CPS
     local function onClick()
         clicks = clicks + 1
         local currentTick = tick()
         if currentTick - lastTick > 1 then
             local cps = clicks / (currentTick - lastTick)
-            cpsDisplay.Text = "CPS: " .. cps
+            cpsDisplay.Text = "CPS: " .. string.format("%.2f", cps)
             clicks = 0
             lastTick = currentTick
         end
     end
-    
+
     -- Function to reset clicks and CPS display
     local function reset()
         clicks = 0
         lastTick = tick()
         cpsDisplay.Text = "CPS: 0"
     end
-    
-    -- Return the onClick and reset functions
+
     return onClick, reset
 end
 
 -- Create a GUI display to show the CPS
+local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 local cpsDisplay = Instance.new("TextLabel")
-cpsDisplay.Parent = game.StarterGui
+cpsDisplay.Parent = playerGui
 cpsDisplay.Size = UDim2.new(0, 100, 0, 50)
 cpsDisplay.Position = UDim2.new(0, 100, 0, 100)
 cpsDisplay.Text = "CPS: 0"
 cpsDisplay.TextColor3 = Color3.new(1, 1, 1)
 cpsDisplay.BackgroundColor3 = Color3.new(0, 1, 0)
 
+local onClick, reset = calculateCPS(cpsDisplay)
+
 -- Create a reset button
 local resetButton = Instance.new("TextButton")
-resetButton.Parent = game.StarterGui
+resetButton.Parent = playerGui
 resetButton.Size = UDim2.new(0, 100, 0, 50)
 resetButton.Position = UDim2.new(0, 200, 0, 100)
 resetButton.Text = "Reset"
 resetButton.TextColor3 = Color3.new(1, 1, 1)
 resetButton.BackgroundColor3 = Color3.new(1, 0, 0)
-resetButton.MouseButton1Click:Connect(function()
-    local onClick, reset = calculateCPS()
-    onClick = onClick
-    reset = reset
-    game.StarterGui.Button.ClickDetector.MouseClickEvent:Connect(onClick)
-    resetButton.MouseButton1Click:Connect(reset)
-end)
+resetButton.MouseButton1Click:Connect(reset)
 
 -- Create a button to test the script
 local button = Instance.new("TextButton")
-button.Parent = game.StarterGui
+button.Parent = playerGui
 button.Size = UDim2.new(0, 100, 0, 50)
 button.Position = UDim2.new(0, 100, 0, 200)
 button.Text = "Click Me!"
 button.TextColor3 = Color3.new(1, 1, 1)
 button.BackgroundColor3 = Color3.new(0, 1, 0)
-game.StarterGui.Button.ClickDetector.MouseClickEvent:Connect(function()
-    local onClick, reset = calculateCPS()
-    onClick = onClick
-    reset = reset
-    onClick()
-end)
+button.MouseButton1Click:Connect(onClick)
