@@ -1,84 +1,79 @@
--- Define a function to calculate CPS
-local function calculateCPS(cpsDisplay)
-    local clicks = 0
-    local lastTick = os.clock()  -- Using os.clock() for higher precision
+-- Interactive CPS Counter Script with GUI
+-- Displays CPS (Clicks Per Second) on a GUI in real-time with faster updates and decay.
 
-    -- Function to increment clicks and calculate CPS
-    local function onClick()
-        clicks = clicks + 1
-        local currentTick = os.clock()
-        local elapsedTime = currentTick - lastTick
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
-        if elapsedTime > 1 then
-            local cps = clicks / elapsedTime
-            cpsDisplay.Text = "CPS: " .. string.format("%.2f", cps)
-            clicks = 0
-            lastTick = currentTick
+local clicks = 0
+local startTime = os.clock()
+local decayRate = 2 -- Increased CPS decay rate per second for faster decay
+local incrementPerClick = 2 -- Number of clicks to increment per mouse click for faster CPS increase
+
+-- Create the GUI
+local screenGui = Instance.new("ScreenGui")
+local textLabel = Instance.new("TextLabel")
+
+-- Configure the GUI
+screenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+textLabel.Parent = screenGui
+textLabel.Size = UDim2.new(0, 200, 0, 50)
+textLabel.Position = UDim2.new(0.5, -100, 0.1, 0) -- Centered at the top
+textLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+textLabel.TextColor3 = Color3.new(1, 1, 1)
+textLabel.TextSize = 24
+textLabel.Text = "CPS: 0.00"
+
+-- Function to calculate and update CPS
+local function calculateCPS()
+    local elapsedTime = os.clock() - startTime
+
+    if elapsedTime > 0 then
+        local cps = clicks / elapsedTime
+        textLabel.Text = "CPS: " .. string.format("%.2f", cps)
+        return cps
+    end
+
+    return 0
+end
+
+-- Coroutine to handle CPS decay over time
+local function startDecaying()
+    while true do
+        RunService.RenderStepped:Wait()
+
+        local currentText = textLabel.Text
+        local currentCPS = tonumber(currentText:match("CPS: ([%d%.]+)"))
+
+        if currentCPS and currentCPS > 0 then
+            local newCPS = math.max(0, currentCPS - decayRate * RunService.RenderStepped:Wait())
+            textLabel.Text = "CPS: " .. string.format("%.2f", newCPS)
         end
     end
+end
 
-    -- Function to reset clicks and CPS display
-    local function reset()
-        clicks = 0
-        lastTick = os.clock()
-        cpsDisplay.Text = "CPS: 0"
+-- Start the decay coroutine
+coroutine.wrap(startDecaying)()
+
+-- Function to reset CPS calculation
+local function resetCPS()
+    clicks = 0
+    startTime = os.clock()
+    textLabel.Text = "CPS: 0.00"
+end
+
+-- Detect left mouse button clicks
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        clicks = clicks + incrementPerClick -- Increase clicks by a larger amount
+        calculateCPS()
     end
-
-    return onClick, reset
-end
-
--- Create a GUI display to show the CPS
-local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-if not playerGui then
-    warn("PlayerGui not found! Ensure the script is running as a LocalScript.")
-    return
-end
-
--- CPS Display
-local cpsDisplay = Instance.new("TextLabel")
-cpsDisplay.Parent = playerGui
-cpsDisplay.Size = UDim2.new(0.2, 0, 0.1, 0) -- Scales dynamically
-cpsDisplay.Position = UDim2.new(0.4, 0, 0.1, 0) -- Centered horizontally
-cpsDisplay.Text = "CPS: 0"
-cpsDisplay.TextColor3 = Color3.new(1, 1, 1)
-cpsDisplay.BackgroundColor3 = Color3.new(0, 1, 0)
-
--- Functions for handling clicks and resets
-local onClick, reset = calculateCPS(cpsDisplay)
-
--- Reset Button
-local resetButton = Instance.new("TextButton")
-resetButton.Parent = playerGui
-resetButton.Size = UDim2.new(0.2, 0, 0.1, 0) -- Dynamic scaling
-resetButton.Position = UDim2.new(0.4, 0, 0.25, 0) -- Adjusted dynamic scaling
-resetButton.Text = "Reset"
-resetButton.TextColor3 = Color3.new(1, 1, 1)
-resetButton.BackgroundColor3 = Color3.new(1, 0, 0)
-resetButton.MouseButton1Click:Connect(function()
-    reset()
-    print("CPS reset to 0")
 end)
 
--- Click Me Button
-local button = Instance.new("TextButton")
-button.Parent = playerGui
-button.Size = UDim2.new(0.2, 0, 0.1, 0) -- Dynamic scaling
-button.Position = UDim2.new(0.4, 0, 0.4, 0) -- Adjusted dynamic scaling
-button.Text = "Click Me!"
-button.TextColor3 = Color3.new(1, 1, 1)
-button.BackgroundColor3 = Color3.new(0, 1, 0)
-button.MouseButton1Click:Connect(onClick)
+-- Expose interactive functions globally (optional)
+_G.resetCPS = resetCPS
 
--- Add hover effect for buttons
-local function addHoverEffect(button)
-    local originalColor = button.BackgroundColor3
-    button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = Color3.new(0.8, 0.8, 0.8) -- Light gray
-    end)
-    button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = originalColor
-    end)
-end
-
-addHoverEffect(resetButton)
-addHoverEffect(button)
+-- Instructions for the user
+print("Interactive CPS Counter with GUI Initialized.")
+print("Click your left mouse button to see the CPS update in real-time.")
+print("The CPS will now increase faster and decrease faster when you stop clicking.")
+print("Type '_G.resetCPS()' in the console to reset the CPS counter.")
