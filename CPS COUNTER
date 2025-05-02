@@ -1,14 +1,16 @@
 -- Define a function to calculate CPS
 local function calculateCPS(cpsDisplay)
     local clicks = 0
-    local lastTick = tick()
+    local lastTick = os.clock()  -- Using os.clock() for higher precision
 
     -- Function to increment clicks and calculate CPS
     local function onClick()
         clicks = clicks + 1
-        local currentTick = tick()
-        if currentTick - lastTick > 1 then
-            local cps = clicks / (currentTick - lastTick)
+        local currentTick = os.clock()
+        local elapsedTime = currentTick - lastTick
+
+        if elapsedTime > 1 then
+            local cps = clicks / elapsedTime
             cpsDisplay.Text = "CPS: " .. string.format("%.2f", cps)
             clicks = 0
             lastTick = currentTick
@@ -18,7 +20,7 @@ local function calculateCPS(cpsDisplay)
     -- Function to reset clicks and CPS display
     local function reset()
         clicks = 0
-        lastTick = tick()
+        lastTick = os.clock()
         cpsDisplay.Text = "CPS: 0"
     end
 
@@ -27,32 +29,55 @@ end
 
 -- Create a GUI display to show the CPS
 local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+if not playerGui then
+    warn("PlayerGui not found!")
+    return
+end
+
+-- CPS Display
 local cpsDisplay = Instance.new("TextLabel")
 cpsDisplay.Parent = playerGui
 cpsDisplay.Size = UDim2.new(0, 100, 0, 50)
-cpsDisplay.Position = UDim2.new(0, 100, 0, 100)
+cpsDisplay.Position = UDim2.new(0, 0.1, 0, 0.1) -- Dynamic scaling
 cpsDisplay.Text = "CPS: 0"
 cpsDisplay.TextColor3 = Color3.new(1, 1, 1)
 cpsDisplay.BackgroundColor3 = Color3.new(0, 1, 0)
 
+-- Functions for handling clicks and resets
 local onClick, reset = calculateCPS(cpsDisplay)
 
--- Create a reset button
+-- Reset Button
 local resetButton = Instance.new("TextButton")
 resetButton.Parent = playerGui
-resetButton.Size = UDim2.new(0, 100, 0, 50)
-resetButton.Position = UDim2.new(0, 200, 0, 100)
+resetButton.Size = UDim2.new(0, 120, 0, 50)
+resetButton.Position = UDim2.new(0, 0.3, 0, 0.1) -- Dynamic scaling
 resetButton.Text = "Reset"
 resetButton.TextColor3 = Color3.new(1, 1, 1)
 resetButton.BackgroundColor3 = Color3.new(1, 0, 0)
-resetButton.MouseButton1Click:Connect(reset)
+resetButton.MouseButton1Click:Connect(function()
+    reset()
+    print("CPS reset to 0")
+end)
 
--- Create a button to test the script
+-- Click Me Button
 local button = Instance.new("TextButton")
 button.Parent = playerGui
-button.Size = UDim2.new(0, 100, 0, 50)
-button.Position = UDim2.new(0, 100, 0, 200)
+button.Size = UDim2.new(0, 120, 0, 50)
+button.Position = UDim2.new(0, 0.1, 0, 0.3) -- Dynamic scaling
 button.Text = "Click Me!"
 button.TextColor3 = Color3.new(1, 1, 1)
 button.BackgroundColor3 = Color3.new(0, 1, 0)
 button.MouseButton1Click:Connect(onClick)
+
+-- Add hover effect for buttons
+local function addHoverEffect(button)
+    button.MouseEnter:Connect(function()
+        button.BackgroundColor3 = Color3.new(0.8, 0.8, 0.8) -- Light gray
+    end)
+    button.MouseLeave:Connect(function()
+        button.BackgroundColor3 = Color3.new(0, 1, 0) -- Original green
+    end)
+end
+
+addHoverEffect(resetButton)
+addHoverEffect(button)
